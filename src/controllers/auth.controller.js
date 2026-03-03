@@ -21,7 +21,7 @@ export const register = asyncHandler(async (req, res) => {
 
   res.cookie('refreshToken', refreshToken, {
     httpOnly: true, secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict', maxAge: 7 * 24 * 60 * 60 * 1000
+    sameSite: 'none', maxAge: 7 * 24 * 60 * 60 * 1000
   })
 
   res.status(201).json(new ApiResponse(201, { user, accessToken }, 'Registered'))
@@ -42,7 +42,7 @@ export const login = asyncHandler(async (req, res) => {
 
   res.cookie('refreshToken', refreshToken, {
     httpOnly: true, secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict', maxAge: 7 * 24 * 60 * 60 * 1000
+    sameSite: 'none', maxAge: 7 * 24 * 60 * 60 * 1000
   })
 
   res.json(new ApiResponse(200, { user, accessToken }, 'Logged in'))
