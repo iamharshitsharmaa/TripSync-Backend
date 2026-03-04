@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import crypto from 'crypto'
+import mongoose from 'mongoose'
 import verifyJWT from '../middleware/verifyJWT.js'
 import { requireTripAccess } from '../middleware/requireTripAccess.js'
 import { Trip } from '../models/Trip.js'
@@ -11,6 +12,43 @@ import asyncHandler from '../utils/asyncHandler.js'
 const router = Router()
 router.use(verifyJWT)
 
+// ── POST /api/join  (join by code only — no tripId needed)
+router.post('/join',
+  asyncHandler(async (req, res) => {
+    const { code } = req.body
+    if (!code) throw new ApiError(400, 'Invite code is required')
+
+    const trip = await Trip.findOne({ inviteCode: code.trim().toUpperCase() })
+    if (!trip) throw new ApiError(404, 'Invalid invite code. Check the code and try again.')
+
+    // Already a member?
+    const already = trip.members.find(
+      m => m.user.toString() === req.user._id.toString() && m.inviteStatus === 'accepted'
+    )
+    if (already) {
+      return res.json(new ApiResponse(200, {
+        tripId:    trip._id,
+        tripTitle: trip.title,
+        alreadyMember: true,
+      }, 'You are already a member of this trip'))
+    }
+
+    // Add as viewer
+    trip.members.push({
+      user:         req.user._id,
+      role:         'viewer',
+      inviteStatus: 'accepted',
+    })
+    await trip.save()
+
+    res.json(new ApiResponse(200, {
+      tripId:    trip._id,
+      tripTitle: trip.title,
+      alreadyMember: false,
+    }, `Joined "${trip.title}" successfully!`))
+  })
+)
+
 // ── POST /api/trips/:tripId/invite  (invite by email)
 router.post('/trips/:tripId/invite',
   requireTripAccess('owner'),
@@ -20,7 +58,6 @@ router.post('/trips/:tripId/invite',
 
     const trip = req.trip
 
-    // Check if user already a member
     const existingUser = await User.findOne({ email: email.toLowerCase() })
     if (existingUser) {
       const already = trip.members.find(
@@ -29,12 +66,11 @@ router.post('/trips/:tripId/invite',
       if (already) throw new ApiError(409, 'User is already a member')
     }
 
-    const token   = crypto.randomBytes(32).toString('hex')
-    const expiry  = new Date(Date.now() + 72 * 60 * 60 * 1000) // 72 hours
+    const token  = crypto.randomBytes(32).toString('hex')
+    const expiry = new Date(Date.now() + 72 * 60 * 60 * 1000) // 72h
 
-    // Add pending member
     trip.members.push({
-      user:         existingUser?._id || new (await import('mongoose')).default.Types.ObjectId(),
+      user:         existingUser?._id || new mongoose.Types.ObjectId(),
       role,
       inviteStatus: 'pending',
       inviteToken:  token,
@@ -43,7 +79,7 @@ router.post('/trips/:tripId/invite',
     })
     await trip.save()
 
-    // Try to send email — don't crash if email fails
+    // Try email — non-fatal if it fails
     try {
       const { sendInviteEmail } = await import('../services/email.service.js')
       await sendInviteEmail({
@@ -52,19 +88,18 @@ router.post('/trips/:tripId/invite',
         tripTitle:   trip.title,
         inviteLink:  `${process.env.CLIENT_URL}/invite/${token}`,
       })
-    } catch (emailErr) {
-      console.warn('Email send failed (non-fatal):', emailErr.message)
+    } catch (err) {
+      console.warn('Email failed (non-fatal):', err.message)
     }
 
     res.json(new ApiResponse(200, {
-      message: 'Invite sent',
-      // Return token so frontend can show manual link if email fails
+      message:    'Invite sent',
       inviteLink: `${process.env.CLIENT_URL}/invite/${token}`,
     }))
   })
 )
 
-// ── POST /api/invites/:token/accept  (accept email invite)
+// ── POST /api/invites/:token/accept  (accept email invite link)
 router.post('/invites/:token/accept',
   asyncHandler(async (req, res) => {
     const { token } = req.params
@@ -75,7 +110,7 @@ router.post('/invites/:token/accept',
     if (!member) throw new ApiError(404, 'Invite not found')
     if (member.tokenExpiry < new Date()) throw new ApiError(400, 'Invite link has expired')
 
-    // Check not already a member
+    // Already accepted?
     const alreadyMember = trip.members.find(
       m => m.user.toString() === req.user._id.toString() && m.inviteStatus === 'accepted'
     )
@@ -93,38 +128,7 @@ router.post('/invites/:token/accept',
   })
 )
 
-// ── POST /api/trips/:tripId/join  (join by invite code)
-router.post('/trips/:tripId/join',
-  asyncHandler(async (req, res) => {
-    const { code } = req.body
-    if (!code) throw new ApiError(400, 'Invite code is required')
-
-    const trip = await Trip.findOne({
-      _id:        req.params.tripId,
-      inviteCode: code.toUpperCase(),
-    })
-    if (!trip) throw new ApiError(404, 'Invalid invite code')
-
-    // Check not already a member
-    const already = trip.members.find(
-      m => m.user.toString() === req.user._id.toString()
-    )
-    if (already) {
-      return res.json(new ApiResponse(200, { tripId: trip._id }, 'Already a member'))
-    }
-
-    trip.members.push({
-      user:         req.user._id,
-      role:         'viewer',
-      inviteStatus: 'accepted',
-    })
-    await trip.save()
-
-    res.json(new ApiResponse(200, { tripId: trip._id }, 'Joined trip'))
-  })
-)
-
-// ── POST /api/trips/:tripId/invite-code/regenerate  (generate new code)
+// ── POST /api/trips/:tripId/invite-code/regenerate
 router.post('/trips/:tripId/invite-code/regenerate',
   requireTripAccess('owner'),
   asyncHandler(async (req, res) => {
@@ -135,19 +139,16 @@ router.post('/trips/:tripId/invite-code/regenerate',
   })
 )
 
-// ── PATCH /api/trips/:tripId/members/:userId  (update role)
+// ── PATCH /api/trips/:tripId/members/:userId  (change role)
 router.patch('/trips/:tripId/members/:userId',
   requireTripAccess('owner'),
   asyncHandler(async (req, res) => {
     const { role } = req.body
     if (!['editor', 'viewer'].includes(role)) throw new ApiError(400, 'Invalid role')
-
-    const trip   = req.trip
-    const member = trip.members.find(m => m.user.toString() === req.params.userId)
+    const member = req.trip.members.find(m => m.user.toString() === req.params.userId)
     if (!member) throw new ApiError(404, 'Member not found')
-
     member.role = role
-    await trip.save()
+    await req.trip.save()
     res.json(new ApiResponse(200, {}, 'Role updated'))
   })
 )
@@ -156,26 +157,19 @@ router.patch('/trips/:tripId/members/:userId',
 router.delete('/trips/:tripId/members/:userId',
   requireTripAccess('owner'),
   asyncHandler(async (req, res) => {
-    const trip = req.trip
-
-    // Prevent removing the owner
-    const member = trip.members.find(m => m.user.toString() === req.params.userId)
+    const member = req.trip.members.find(m => m.user.toString() === req.params.userId)
     if (!member) throw new ApiError(404, 'Member not found')
     if (member.role === 'owner') throw new ApiError(403, 'Cannot remove the owner')
-
-    trip.members = trip.members.filter(m => m.user.toString() !== req.params.userId)
-    await trip.save()
+    req.trip.members = req.trip.members.filter(m => m.user.toString() !== req.params.userId)
+    await req.trip.save()
     res.json(new ApiResponse(200, {}, 'Member removed'))
   })
 )
 
-// ── Helper
 function generateCode() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789' // no confusable chars (0,O,1,I)
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
   let code = ''
-  for (let i = 0; i < 6; i++) {
-    code += chars[Math.floor(Math.random() * chars.length)]
-  }
+  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)]
   return code
 }
 
