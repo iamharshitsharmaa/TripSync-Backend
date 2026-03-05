@@ -11,11 +11,13 @@ import checklistRoutes   from './routes/checklist.routes.js'
 import reservationRoutes from './routes/reservation.routes.js'
 import expenseRoutes     from './routes/expense.routes.js'
 import uploadRoutes      from './routes/upload.routes.js'
+import chatRoutes from './routes/chat.routes.js'
 
 const app = express()
 
 app.use(cors({
   origin: process.env.CLIENT_URL  ,                 // Local development: http://localhost:5173 
+  // origin: "http://localhost:5173" , 
   credentials: true,
 }))
 app.use(express.json())
@@ -37,6 +39,7 @@ app.use('/api',       checklistRoutes)   // /api/trips/:id/checklists
 app.use('/api',       reservationRoutes) // /api/trips/:id/reservations
 app.use('/api',       expenseRoutes)     // /api/trips/:id/expenses
 app.use('/api',       uploadRoutes)      // /api/upload/trip/:id
+app.use('/api/trips/:id/messages', chatRoutes) // chat routes are nested under trips for socket room convenience
 
 // Global error handler — MUST be last
 app.use((err, req, res, next) => {

@@ -19,7 +19,6 @@ export const getActivities = asyncHandler(async (req, res) => {
 export const createActivity = asyncHandler(async (req, res) => {
   const { title, type, startTime, endTime, location, notes, dayIndex, estimatedCost } = req.body
 
-  // Get max position for this day and add 1
   const last = await Activity.findOne({ trip: req.params.tripId, dayIndex }).sort({ position: -1 })
   const position = (last?.position || 0) + 1
 
@@ -29,9 +28,7 @@ export const createActivity = asyncHandler(async (req, res) => {
     title, type, startTime, endTime, location, notes, dayIndex, estimatedCost, position
   })
 
-  // Emit socket event
   req.app.get('io')?.to(`trip:${req.params.tripId}`).emit('activity:created', activity)
-
   res.status(201).json(new ApiResponse(201, activity, 'Activity created'))
 })
 
@@ -50,26 +47,45 @@ export const updateActivity = asyncHandler(async (req, res) => {
 
 // PATCH /api/activities/:id/reorder
 export const reorderActivity = asyncHandler(async (req, res) => {
-  const { prevPosition, nextPosition } = req.body
+  const { prevPosition, nextPosition, dayIndex } = req.body  // ← added dayIndex
+
   const activity = await Activity.findById(req.params.id)
   if (!activity) throw new ApiError(404, 'Not found')
 
-  let newPosition
-  if (prevPosition == null) newPosition = nextPosition / 2
-  else if (nextPosition == null) newPosition = prevPosition + 1
-  else newPosition = (prevPosition + nextPosition) / 2
+  // ── Cross-column move: update dayIndex first ──────────────
+  if (dayIndex !== undefined && Number(dayIndex) !== activity.dayIndex) {
+    activity.dayIndex = Number(dayIndex)
+  }
 
-  // Regenerate if gap too small
-  if (Math.abs(newPosition - prevPosition) < 0.001 || Math.abs(newPosition - nextPosition) < 0.001) {
-    const siblings = await Activity.find({ trip: activity.trip, dayIndex: activity.dayIndex }).sort({ position: 1 })
-    await Promise.all(siblings.map((s, i) => Activity.findByIdAndUpdate(s._id, { position: i + 1 })))
+  // ── Fractional indexing ───────────────────────────────────
+  let newPosition
+  if (prevPosition == null)      newPosition = nextPosition / 2
+  else if (nextPosition == null) newPosition = prevPosition + 1
+  else                           newPosition = (prevPosition + nextPosition) / 2
+
+  // Regenerate positions if gap too small
+  if (
+    prevPosition != null && Math.abs(newPosition - prevPosition) < 0.001 ||
+    nextPosition != null && Math.abs(newPosition - nextPosition) < 0.001
+  ) {
+    const siblings = await Activity
+      .find({ trip: activity.trip, dayIndex: activity.dayIndex })
+      .sort({ position: 1 })
+    await Promise.all(siblings.map((s, i) =>
+      Activity.findByIdAndUpdate(s._id, { position: i + 1 })
+    ))
     newPosition = siblings.findIndex(s => s._id.toString() === activity._id.toString()) + 1
   }
 
   activity.position = newPosition
   await activity.save()
 
-  req.app.get('io')?.to(`trip:${activity.trip}`).emit('activity:reordered', { id: activity._id, position: newPosition })
+  req.app.get('io')?.to(`trip:${activity.trip}`).emit('activity:reordered', {
+    id: activity._id,
+    position: newPosition,
+    dayIndex: activity.dayIndex,   // ← broadcast new dayIndex so other clients update
+  })
+
   res.json(new ApiResponse(200, activity))
 })
 

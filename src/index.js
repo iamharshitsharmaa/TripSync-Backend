@@ -15,6 +15,7 @@ if (process.env.NODE_ENV !== 'production') {
 
 connectDB().then(() => {
   const io = initSocket(httpServer)
+  app.use((req, _res, next) => { req.io = io; next() })
   app.set('io', io)
 
   const PORT = process.env.PORT || 5000
