@@ -75,6 +75,8 @@ export const updateTrip = asyncHandler(async (req, res) => {
   const { title, description, startDate, endDate, currency, budgetLimit, status } = req.body
   const trip = req.trip // set by requireTripAccess middleware
 
+  
+
   if (title)       trip.title       = title.trim()
   if (description !== undefined) trip.description = description
   if (startDate)   trip.startDate   = new Date(startDate)
@@ -82,6 +84,10 @@ export const updateTrip = asyncHandler(async (req, res) => {
   if (currency)    trip.currency    = currency
   if (budgetLimit !== undefined) trip.budgetLimit = Number(budgetLimit) || 0
   if (status)      trip.status      = status
+
+  if ('status' in req.body) {
+  trip.status = req.body.status ?? undefined  // null clears it
+}
 
   await trip.save()
   res.json(new ApiResponse(200, trip, 'Trip updated'))
