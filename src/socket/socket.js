@@ -8,7 +8,7 @@ export const initSocket = (httpServer) => {
       credentials: true,
     }, 
     // cors: {
-    //   origin: "http://localhost:5173",   // ← reads from Railway env var
+    //   origin: "http://localhost:5173",   // local development
     //   methods: ['GET', 'POST'],
     //   credentials: true,
     // },
@@ -16,17 +16,19 @@ export const initSocket = (httpServer) => {
   })
 
   io.on('connection', (socket) => {
-    // ── Trip rooms ──────────────────────────────
-    socket.on('join-trip', (tripId) => {
+
+    // ── Trip rooms ──────────────────────────────────────────
+    // Use colon style everywhere to match useSocket.js
+    socket.on('join:trip', (tripId) => {
       socket.join(`trip:${tripId}`)
       socket.to(`trip:${tripId}`).emit('user-joined', { socketId: socket.id })
     })
 
-    socket.on('leave-trip', (tripId) => {
+    socket.on('leave:trip', (tripId) => {
       socket.leave(`trip:${tripId}`)
     })
 
-    // ── Activities ──────────────────────────────
+    // ── Activities ──────────────────────────────────────────
     socket.on('activity-update', ({ tripId, activity }) => {
       socket.to(`trip:${tripId}`).emit('activity-updated', activity)
     })
@@ -37,7 +39,7 @@ export const initSocket = (httpServer) => {
       socket.to(`trip:${tripId}`).emit('activity-deleted', activityId)
     })
 
-    // ── Chat typing indicators ──────────────────
+    // ── Chat typing indicators ──────────────────────────────
     socket.on('typing-start', ({ tripId, user }) => {
       socket.to(`trip:${tripId}`).emit('typing-start', { user, socketId: socket.id })
     })
@@ -45,7 +47,9 @@ export const initSocket = (httpServer) => {
       socket.to(`trip:${tripId}`).emit('typing-stop', { socketId: socket.id })
     })
 
-    socket.on('disconnect', () => {})
+    socket.on('disconnect', () => {
+      // typing cleanup handled by client-side timeout
+    })
   })
 
   return io

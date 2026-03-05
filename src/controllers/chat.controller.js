@@ -12,13 +12,12 @@ export const getMessages = asyncHandler(async (req, res) => {
 
   const [messages, total] = await Promise.all([
     Message.find({ trip: tripId })
-      .sort({ createdAt: -1 })   // newest first from DB
+      .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit),
     Message.countDocuments({ trip: tripId }),
   ])
 
-  // Return oldest-first so the UI can just render in order
   const ordered = messages.reverse()
 
   res.status(200).json(
@@ -41,33 +40,33 @@ export const sendMessage = asyncHandler(async (req, res) => {
     readBy:  [req.user._id],
   })
 
-  // message is already populated via pre-find hook on create... 
-  // but create doesn't trigger pre-find, so fetch it explicitly
+  // Populate sender so clients get name + avatar immediately
   const populated = await Message.findById(message._id)
 
-  // Emit via socket so all room members get it in real time
-  // req.io is attached in app.js
-  if (req.io) {
-    req.io.to(`trip:${req.params.id}`).emit('new-message', populated)
+  // Use req.app.get('io') — this is the correct way to access io in controllers
+  const io = req.app.get('io')
+  if (io) {
+    io.to(`trip:${req.params.id}`).emit('new-message', populated)
   }
 
   res.status(201).json(new ApiResponse(201, populated, 'Message sent'))
 })
 
-// DELETE /api/trips/:id/messages/:msgId  (only sender or owner)
+// DELETE /api/trips/:id/messages/:msgId
 export const deleteMessage = asyncHandler(async (req, res) => {
   const msg = await Message.findById(req.params.msgId)
   if (!msg) throw new ApiError(404, 'Message not found')
 
   const isOwner  = req.member?.role === 'owner'
-  const isSender = msg.sender._id.toString() === req.user._id.toString()
+  const isSender = msg.sender.toString() === req.user._id.toString()
 
   if (!isOwner && !isSender) throw new ApiError(403, 'Not allowed')
 
   await msg.deleteOne()
 
-  if (req.io) {
-    req.io.to(`trip:${req.params.id}`).emit('message-deleted', req.params.msgId)
+  const io = req.app.get('io')
+  if (io) {
+    io.to(`trip:${req.params.id}`).emit('message-deleted', req.params.msgId)
   }
 
   res.status(200).json(new ApiResponse(200, {}, 'Message deleted'))
