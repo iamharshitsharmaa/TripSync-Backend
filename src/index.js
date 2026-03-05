@@ -8,6 +8,11 @@ import { initSocket } from './socket/socket.js'
 
 const httpServer = createServer(app)
 
+if (process.env.NODE_ENV !== 'production') {
+  const dotenv = await import('dotenv')
+  dotenv.default.config()
+}
+
 connectDB().then(() => {
   const io = initSocket(httpServer)
   app.set('io', io)

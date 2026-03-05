@@ -25,9 +25,6 @@ export const getTrips = asyncHandler(async (req, res) => {
 
 // POST /api/trips — create new trip
 export const createTrip = asyncHandler(async (req, res) => {
-  console.log('POST /trips — body:', req.body)
-  console.log('POST /trips — user:', req.user?._id)
-
   const { title, description, startDate, endDate, currency, budgetLimit } = req.body
 
   if (!title)     throw new ApiError(400, 'Title is required')

@@ -20,9 +20,11 @@ export const register = asyncHandler(async (req, res) => {
   await user.save()
 
   res.cookie('refreshToken', refreshToken, {
-    httpOnly: true, secure: process.env.NODE_ENV === 'production',
-    sameSite: 'none', maxAge: 7 * 24 * 60 * 60 * 1000
-  })
+  httpOnly: true,
+  secure:   process.env.NODE_ENV === 'production',  // HTTPS only in prod
+  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',  // cross-site cookies
+  maxAge:   30 * 24 * 60 * 60 * 1000,  // 30 days
+})
 
   res.status(201).json(new ApiResponse(201, { user, accessToken }, 'Registered'))
 })

@@ -5,7 +5,7 @@ import { User } from '../models/User.js'
 export const initSocket = (httpServer) => {
   const io = new Server(httpServer, {
     cors: {
-      origin:      process.env.CLIENT_URL || 'http://localhost:5173',
+      origin:     'http://localhost:5173' , // Change to your frontend URL in production   ||    process.env.CLIENT_URL
       credentials: true,
       methods:     ['GET', 'POST'],
     },
