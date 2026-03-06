@@ -18,11 +18,9 @@ export const getMessages = asyncHandler(async (req, res) => {
     Message.countDocuments({ trip: tripId }),
   ])
 
-  const ordered = messages.reverse()
-
   res.status(200).json(
     new ApiResponse(200, {
-      messages: ordered,
+      messages: messages.reverse(),
       pagination: { page, limit, total, pages: Math.ceil(total / limit) },
     }, 'Messages fetched')
   )
@@ -40,34 +38,32 @@ export const sendMessage = asyncHandler(async (req, res) => {
     readBy:  [req.user._id],
   })
 
-  // Populate sender so clients get name + avatar immediately
   const populated = await Message.findById(message._id)
 
-  // Use req.app.get('io') — this is the correct way to access io in controllers
   const io = req.app.get('io')
-  if (io) {
-    io.to(`trip:${req.params.id}`).emit('new-message', populated)
-  }
+  if (io) io.to(`trip:${req.params.id}`).emit('new-message', populated)
 
   res.status(201).json(new ApiResponse(201, populated, 'Message sent'))
 })
 
 // DELETE /api/trips/:id/messages/:msgId
 export const deleteMessage = asyncHandler(async (req, res) => {
-  const msg = await Message.findById(req.params.msgId)
-  if (!msg) throw new ApiError(404, 'Message not found')
+  const message = await Message.findById(req.params.msgId)
+  if (!message) throw new ApiError(404, 'Message not found')
 
-  const isOwner  = req.member?.role === 'owner'
-  const isSender = msg.sender.toString() === req.user._id.toString()
+  // Handle both populated sender (object) and raw ObjectId
+  const senderId = message.sender?._id
+    ? message.sender._id.toString()
+    : message.sender.toString()
 
-  if (!isOwner && !isSender) throw new ApiError(403, 'Not allowed')
+  const userId = (req.user._id || req.user.id).toString()
 
-  await msg.deleteOne()
+  if (senderId !== userId) throw new ApiError(403, 'Not allowed')
+
+  await message.deleteOne()
 
   const io = req.app.get('io')
-  if (io) {
-    io.to(`trip:${req.params.id}`).emit('message-deleted', req.params.msgId)
-  }
+  if (io) io.to(`trip:${req.params.id}`).emit('message-deleted', message._id)
 
-  res.status(200).json(new ApiResponse(200, {}, 'Message deleted'))
+  res.json(new ApiResponse(200, null, 'Message deleted'))
 })
