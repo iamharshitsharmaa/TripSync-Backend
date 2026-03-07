@@ -26,12 +26,12 @@ const tripSchema = new mongoose.Schema({
   currency:    { type: String, default: 'USD' },
   budgetLimit: { type: Number, default: 0 },
   status:      { type: String, enum: ['draft', 'active', 'archived'], default: 'active' },
-  inviteCode:  { type: String, default: () => generateCode() }, // auto-generated
+  inviteCode:  { type: String, default: () => generateCode() }, 
   members:     [memberSchema],
   days:        [daySchema],
 }, { timestamps: true })
 
-// Auto-generate days — async pre-save (Mongoose 7+)
+
 tripSchema.pre('save', async function () {
   if (this.isModified('startDate') || this.isModified('endDate') || this.isNew) {
     const start = new Date(this.startDate)

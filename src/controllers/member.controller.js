@@ -7,12 +7,12 @@ import ApiResponse from '../utils/ApiResponse.js'
 import asyncHandler from '../utils/asyncHandler.js'
 import mongoose from 'mongoose'
 
-// POST /api/trips/:id/invite
+
 export const inviteMember = asyncHandler(async (req, res) => {
   const { email, role = 'viewer' } = req.body
   const trip = req.trip
 
-  // Check if already a member
+  
   const existingUser = await User.findOne({ email })
   if (existingUser) {
     const already = trip.members.find(m => m.user.toString() === existingUser._id.toString())
@@ -20,16 +20,16 @@ export const inviteMember = asyncHandler(async (req, res) => {
   }
 
   const token = crypto.randomBytes(32).toString('hex')
-  const expiry = new Date(Date.now() + 72 * 60 * 60 * 1000) // 72h
+  const expiry = new Date(Date.now() + 72 * 60 * 60 * 1000) 
 
-  // Add pending member (user can be null if they don't have account yet)
+  
   trip.members.push({
-    user: existingUser?._id || new mongoose.Types.ObjectId(), // placeholder
+    user: existingUser?._id || new mongoose.Types.ObjectId(), 
     role,
     inviteStatus: 'pending',
     inviteToken: token,
     tokenExpiry: expiry,
-    inviteEmail: email, // store email for lookup
+    inviteEmail: email, 
   })
   await trip.save()
 
@@ -43,7 +43,7 @@ export const inviteMember = asyncHandler(async (req, res) => {
   res.json(new ApiResponse(200, {}, 'Invite sent'))
 })
 
-// POST /api/invites/:token/accept
+
 export const acceptInvite = asyncHandler(async (req, res) => {
   const { token } = req.params
   const trip = await Trip.findOne({ 'members.inviteToken': token })
@@ -61,7 +61,7 @@ export const acceptInvite = asyncHandler(async (req, res) => {
   res.json(new ApiResponse(200, { tripId: trip._id }, 'Joined trip'))
 })
 
-// PATCH /api/trips/:id/members/:userId — update role
+
 export const updateMemberRole = asyncHandler(async (req, res) => {
   const { role } = req.body
   const member = req.trip.members.find(m => m.user.toString() === req.params.userId)
@@ -71,7 +71,7 @@ export const updateMemberRole = asyncHandler(async (req, res) => {
   res.json(new ApiResponse(200, {}, 'Role updated'))
 })
 
-// DELETE /api/trips/:id/members/:userId
+
 export const removeMember = asyncHandler(async (req, res) => {
   req.trip.members = req.trip.members.filter(m => m.user.toString() !== req.params.userId)
   await req.trip.save()

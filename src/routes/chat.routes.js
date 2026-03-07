@@ -1,15 +1,13 @@
 import { Router } from 'express'
-import  verifyJWT   from '../middleware/verifyJWT.js'
+import verifyJWT from '../middleware/verifyJWT.js'
 import { requireTripAccess } from '../middleware/requireTripAccess.js'
 import { getMessages, sendMessage, deleteMessage } from '../controllers/chat.controller.js'
 
-const router = Router({ mergeParams: true }) // mergeParams lets us read :id from parent
-
+const router = Router()
 router.use(verifyJWT)
-router.use(requireTripAccess('viewer'))     // any member can read/send
 
-router.get('/',    getMessages)
-router.post('/',   sendMessage)
-router.delete('/:msgId', deleteMessage)
+router.get( '/trips/:id/messages', requireTripAccess('viewer'), getMessages)
+router.post('/trips/:id/messages', requireTripAccess('viewer'), sendMessage)
+router.delete('/trips/:id/messages/:msgId', requireTripAccess('viewer'), deleteMessage)
 
 export default router

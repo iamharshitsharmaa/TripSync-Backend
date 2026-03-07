@@ -16,7 +16,7 @@ const reservationSchema = new mongoose.Schema({
   checkIn:        { type: Date },
   checkOut:       { type: Date },
   notes:          { type: String, default: '' },
-  attachments:    [String], // Cloudinary URLs
+  attachments:    [String], 
 }, { timestamps: true })
 
 reservationSchema.index({ trip: 1, checkIn: 1 })

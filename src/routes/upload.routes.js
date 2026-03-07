@@ -11,17 +11,17 @@ import asyncHandler from '../utils/asyncHandler.js'
 const router = Router()
 router.use(verifyJWT)
 
-// Memory storage — send buffer to Cloudinary
+
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 8 * 1024 * 1024 }, // 8MB
+  limits: { fileSize: 8 * 1024 * 1024 }, 
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith('image/')) cb(null, true)
     else cb(new ApiError(400, 'Only image files are allowed'))
   },
 })
 
-// POST /api/upload/trip/:tripId
+
 router.post('/upload/trip/:tripId',
   requireTripAccess('editor'),
   upload.single('file'),
@@ -35,7 +35,7 @@ router.post('/upload/trip/:tripId',
 
     if (!req.file) throw new ApiError(400, 'No file received')
 
-    // Check Cloudinary credentials before trying
+    
     if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
       throw new ApiError(500, 'Cloudinary credentials not configured in .env')
     }
@@ -46,7 +46,7 @@ router.post('/upload/trip/:tripId',
       api_secret: process.env.CLOUDINARY_API_SECRET,
     })
 
-    // Upload buffer to Cloudinary
+    
     const result = await new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
         {
@@ -67,7 +67,7 @@ router.post('/upload/trip/:tripId',
       stream.end(req.file.buffer)
     })
 
-    // Save URL back to trip document
+    
     const trip = await Trip.findByIdAndUpdate(
       req.params.tripId,
       { coverImage: result.secure_url },

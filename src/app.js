@@ -11,37 +11,51 @@ import checklistRoutes   from './routes/checklist.routes.js'
 import reservationRoutes from './routes/reservation.routes.js'
 import expenseRoutes     from './routes/expense.routes.js'
 import uploadRoutes      from './routes/upload.routes.js'
-import chatRoutes from './routes/chat.routes.js'
+import aiRoutes          from './routes/ai.routes.js'
+import chatRoutes        from './routes/chat.routes.js'
 
 const app = express()
 
+
+
+app.use((req, res, next) => {
+  res.setHeader('Cross-Origin-Opener-Policy',   'unsafe-none')
+  res.setHeader('Cross-Origin-Embedder-Policy', 'unsafe-none')
+  next()
+})
+
+
+
+
+
 app.use(cors({
-  origin: process.env.CLIENT_URL  ,                 // Local development: http://localhost:5173 
-  //  origin: "http://localhost:5173" , 
+  
+  origin: process.env.CLIENT_URL, 
   credentials: true,
 }))
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 app.use(cookieParser())
 
-// Health check
+
 app.get('/api/health', (req, res) => {
   res.json({ ok: true, env: process.env.NODE_ENV })
 })
 
-// Routes
+
 app.use('/api/auth',  authRoutes)
 app.use('/api/trips', tripRoutes)
-app.use('/api',       memberRoutes)      // /api/trips/:id/invite, /api/invites/:token/accept, /api/trips/:id/join
-app.use('/api',       activityRoutes)    // /api/trips/:id/activities + /api/activities/:id
-app.use('/api',       commentRoutes)     // /api/comments
-app.use('/api',       checklistRoutes)   // /api/trips/:id/checklists
-app.use('/api',       reservationRoutes) // /api/trips/:id/reservations
-app.use('/api',       expenseRoutes)     // /api/trips/:id/expenses
-app.use('/api',       uploadRoutes)      // /api/upload/trip/:id
-app.use('/api/trips/:id/messages', chatRoutes) // chat routes are nested under trips for socket room convenience
+app.use('/api',       memberRoutes)      
+app.use('/api',       activityRoutes)    
+app.use('/api',       commentRoutes)     
+app.use('/api',       checklistRoutes)   
+app.use('/api',       reservationRoutes) 
+app.use('/api',       expenseRoutes)     
+app.use('/api',       uploadRoutes)      
+app.use('/api',       aiRoutes)          
+app.use('/api',       chatRoutes)        
 
-// Global error handler — MUST be last
+
 app.use((err, req, res, next) => {
   console.error('ERROR:', err.message)
   console.error(err.stack)

@@ -3,7 +3,7 @@ import ApiError from '../utils/ApiError.js'
 import ApiResponse from '../utils/ApiResponse.js'
 import asyncHandler from '../utils/asyncHandler.js'
 
-// GET /api/trips/:tripId/activities?dayIndex=0
+
 export const getActivities = asyncHandler(async (req, res) => {
   const { dayIndex } = req.query
   const query = { trip: req.params.tripId }
@@ -15,7 +15,7 @@ export const getActivities = asyncHandler(async (req, res) => {
   res.json(new ApiResponse(200, activities))
 })
 
-// POST /api/trips/:tripId/activities
+
 export const createActivity = asyncHandler(async (req, res) => {
   const { title, type, startTime, endTime, location, notes, dayIndex, estimatedCost } = req.body
 
@@ -32,7 +32,7 @@ export const createActivity = asyncHandler(async (req, res) => {
   res.status(201).json(new ApiResponse(201, activity, 'Activity created'))
 })
 
-// PATCH /api/activities/:id
+
 export const updateActivity = asyncHandler(async (req, res) => {
   const { title, type, startTime, endTime, location, notes, estimatedCost } = req.body
   const activity = await Activity.findById(req.params.id)
@@ -45,25 +45,25 @@ export const updateActivity = asyncHandler(async (req, res) => {
   res.json(new ApiResponse(200, activity))
 })
 
-// PATCH /api/activities/:id/reorder
+
 export const reorderActivity = asyncHandler(async (req, res) => {
-  const { prevPosition, nextPosition, dayIndex } = req.body  // ← added dayIndex
+  const { prevPosition, nextPosition, dayIndex } = req.body  
 
   const activity = await Activity.findById(req.params.id)
   if (!activity) throw new ApiError(404, 'Not found')
 
-  // ── Cross-column move: update dayIndex first ──────────────
+  
   if (dayIndex !== undefined && Number(dayIndex) !== activity.dayIndex) {
     activity.dayIndex = Number(dayIndex)
   }
 
-  // ── Fractional indexing ───────────────────────────────────
+  
   let newPosition
   if (prevPosition == null)      newPosition = nextPosition / 2
   else if (nextPosition == null) newPosition = prevPosition + 1
   else                           newPosition = (prevPosition + nextPosition) / 2
 
-  // Regenerate positions if gap too small
+  
   if (
     prevPosition != null && Math.abs(newPosition - prevPosition) < 0.001 ||
     nextPosition != null && Math.abs(newPosition - nextPosition) < 0.001
@@ -83,13 +83,13 @@ export const reorderActivity = asyncHandler(async (req, res) => {
   req.app.get('io')?.to(`trip:${activity.trip}`).emit('activity:reordered', {
     id: activity._id,
     position: newPosition,
-    dayIndex: activity.dayIndex,   // ← broadcast new dayIndex so other clients update
+    dayIndex: activity.dayIndex,   
   })
 
   res.json(new ApiResponse(200, activity))
 })
 
-// DELETE /api/activities/:id
+
 export const deleteActivity = asyncHandler(async (req, res) => {
   const activity = await Activity.findByIdAndDelete(req.params.id)
   req.app.get('io')?.to(`trip:${activity.trip}`).emit('activity:deleted', { id: req.params.id })

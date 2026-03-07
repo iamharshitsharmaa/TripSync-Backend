@@ -9,7 +9,7 @@ import asyncHandler from '../utils/asyncHandler.js'
 const router = Router()
 router.use(verifyJWT)
 
-// GET /api/trips/:tripId/checklists
+
 router.get('/trips/:tripId/checklists',
   requireTripAccess('viewer'),
   asyncHandler(async (req, res) => {
@@ -18,7 +18,7 @@ router.get('/trips/:tripId/checklists',
   })
 )
 
-// POST /api/trips/:tripId/checklists
+
 router.post('/trips/:tripId/checklists',
   requireTripAccess('editor'),
   asyncHandler(async (req, res) => {
@@ -29,7 +29,7 @@ router.post('/trips/:tripId/checklists',
   })
 )
 
-// POST /api/checklists/:id/items
+
 router.post('/checklists/:id/items',
   asyncHandler(async (req, res) => {
     const { text } = req.body
@@ -42,7 +42,7 @@ router.post('/checklists/:id/items',
   })
 )
 
-// PATCH /api/checklists/:id/items/:itemId
+
 router.patch('/checklists/:id/items/:itemId',
   asyncHandler(async (req, res) => {
     const { isChecked, assignedTo } = req.body
@@ -57,7 +57,7 @@ router.patch('/checklists/:id/items/:itemId',
   })
 )
 
-// DELETE /api/checklists/:id/items/:itemId
+
 router.delete('/checklists/:id/items/:itemId',
   asyncHandler(async (req, res) => {
     const list = await Checklist.findById(req.params.id)
@@ -68,7 +68,7 @@ router.delete('/checklists/:id/items/:itemId',
   })
 )
 
-// DELETE /api/checklists/:id
+
 router.delete('/checklists/:id',
   asyncHandler(async (req, res) => {
     await Checklist.findByIdAndDelete(req.params.id)

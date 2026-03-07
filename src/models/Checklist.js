@@ -43,7 +43,7 @@ const checklistSchema = new mongoose.Schema(
   { timestamps: true }
 )
 
-// Helpful index for faster trip queries
+
 checklistSchema.index({ trip: 1 })
 
 export const Checklist = mongoose.model('Checklist', checklistSchema)

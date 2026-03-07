@@ -3,7 +3,7 @@ import ApiError from '../utils/ApiError.js'
 import ApiResponse from '../utils/ApiResponse.js'
 import asyncHandler from '../utils/asyncHandler.js'
 
-// GET /api/trips — all trips for current user
+
 export const getTrips = asyncHandler(async (req, res) => {
   console.log('GET /trips — user:', req.user?._id)
 
@@ -23,7 +23,7 @@ export const getTrips = asyncHandler(async (req, res) => {
   res.json(new ApiResponse(200, trips))
 })
 
-// POST /api/trips — create new trip
+
 export const createTrip = asyncHandler(async (req, res) => {
   const { title, description, startDate, endDate, currency, budgetLimit } = req.body
 
@@ -57,7 +57,7 @@ export const createTrip = asyncHandler(async (req, res) => {
   res.status(201).json(new ApiResponse(201, trip, 'Trip created'))
 })
 
-// GET /api/trips/:id — single trip
+
 export const getTrip = asyncHandler(async (req, res) => {
   console.log('GET /trips/:id —', req.params.id)
 
@@ -70,10 +70,10 @@ export const getTrip = asyncHandler(async (req, res) => {
   res.json(new ApiResponse(200, trip))
 })
 
-// PATCH /api/trips/:id — update trip
+
 export const updateTrip = asyncHandler(async (req, res) => {
   const { title, description, startDate, endDate, currency, budgetLimit, status } = req.body
-  const trip = req.trip // set by requireTripAccess middleware
+  const trip = req.trip 
 
   
 
@@ -86,14 +86,14 @@ export const updateTrip = asyncHandler(async (req, res) => {
   if (status)      trip.status      = status
 
   if ('status' in req.body) {
-  trip.status = req.body.status ?? undefined  // null clears it
+  trip.status = req.body.status ?? undefined  
 }
 
   await trip.save()
   res.json(new ApiResponse(200, trip, 'Trip updated'))
 })
 
-// DELETE /api/trips/:id — delete trip (owner only)
+
 export const deleteTrip = asyncHandler(async (req, res) => {
   await Trip.findByIdAndDelete(req.params.id)
   res.json(new ApiResponse(200, {}, 'Trip deleted'))

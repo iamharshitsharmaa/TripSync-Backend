@@ -2,7 +2,7 @@ import { Comment } from '../models/Comment.js'
 import ApiResponse from '../utils/ApiResponse.js'
 import asyncHandler from '../utils/asyncHandler.js'
 
-// GET /api/comments?entityType=activity&entityId=xxx
+
 export const getComments = asyncHandler(async (req, res) => {
   const { entityType, entityId } = req.query
 
@@ -19,7 +19,7 @@ export const getComments = asyncHandler(async (req, res) => {
   res.json(new ApiResponse(200, comments))
 })
 
-// POST /api/comments
+
 export const createComment = asyncHandler(async (req, res) => {
   const { tripId, entityType, entityId, content, parentId } = req.body
 
@@ -40,7 +40,7 @@ export const createComment = asyncHandler(async (req, res) => {
 
   await comment.populate('author', 'name avatar')
 
-  // 🔔 Emit real-time event
+  
   const io = req.app.get('io')
   io?.to(`trip:${tripId}`).emit('comment:added', {
     entityType,
@@ -51,7 +51,7 @@ export const createComment = asyncHandler(async (req, res) => {
   res.status(201).json(new ApiResponse(201, comment))
 })
 
-// DELETE /api/comments/:id
+
 export const deleteComment = asyncHandler(async (req, res) => {
   const deleted = await Comment.findOneAndDelete({
     _id: req.params.id,

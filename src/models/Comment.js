@@ -35,7 +35,7 @@ const commentSchema = new mongoose.Schema(
   { timestamps: true }
 )
 
-// Index for faster lookups
+
 commentSchema.index({ entityType: 1, entityId: 1 })
 
 export const Comment = mongoose.model('Comment', commentSchema)

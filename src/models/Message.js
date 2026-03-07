@@ -10,7 +10,7 @@ const messageSchema = new mongoose.Schema(
   { timestamps: true }
 )
 
-// Always populate sender name + avatar when querying
+
 messageSchema.pre(/^find/, function () {
   this.populate('sender', 'name avatar email')
 })

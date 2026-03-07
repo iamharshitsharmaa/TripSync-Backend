@@ -3,7 +3,7 @@ import ApiError from '../utils/ApiError.js'
 import ApiResponse from '../utils/ApiResponse.js'
 import asyncHandler from '../utils/asyncHandler.js'
 
-// GET /api/trips/:id/messages?page=1&limit=50
+
 export const getMessages = asyncHandler(async (req, res) => {
   const tripId = req.params.id
   const page   = Math.max(1, parseInt(req.query.page)  || 1)
@@ -26,7 +26,7 @@ export const getMessages = asyncHandler(async (req, res) => {
   )
 })
 
-// POST /api/trips/:id/messages
+
 export const sendMessage = asyncHandler(async (req, res) => {
   const { content } = req.body
   if (!content?.trim()) throw new ApiError(400, 'Message content is required')
@@ -46,12 +46,12 @@ export const sendMessage = asyncHandler(async (req, res) => {
   res.status(201).json(new ApiResponse(201, populated, 'Message sent'))
 })
 
-// DELETE /api/trips/:id/messages/:msgId
+
 export const deleteMessage = asyncHandler(async (req, res) => {
   const message = await Message.findById(req.params.msgId)
   if (!message) throw new ApiError(404, 'Message not found')
 
-  // Handle both populated sender (object) and raw ObjectId
+  
   const senderId = message.sender?._id
     ? message.sender._id.toString()
     : message.sender.toString()

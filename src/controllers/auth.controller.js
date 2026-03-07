@@ -5,7 +5,7 @@ import ApiResponse from '../utils/ApiResponse.js'
 import asyncHandler from '../utils/asyncHandler.js'
 import jwt from 'jsonwebtoken'
 
-// ── Shared cookie config ──────────────────────────────────────
+
 const cookieOptions = () => ({
   httpOnly: true,
   secure:   process.env.NODE_ENV === 'production',
@@ -13,7 +13,7 @@ const cookieOptions = () => ({
   maxAge:   30 * 24 * 60 * 60 * 1000,
 })
 
-// ── Password strength check ───────────────────────────────────
+
 function validatePassword(password) {
   if (!password || password.length < 8)
     throw new ApiError(400, 'Password must be at least 8 characters')
@@ -23,7 +23,7 @@ function validatePassword(password) {
     throw new ApiError(400, 'Password must contain at least one number')
 }
 
-// ── POST /api/auth/register ───────────────────────────────────
+
 export const register = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body
 
@@ -51,7 +51,7 @@ export const register = asyncHandler(async (req, res) => {
   res.status(201).json(new ApiResponse(201, { user, accessToken }, 'Registered'))
 })
 
-// ── POST /api/auth/login ──────────────────────────────────────
+
 export const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body
   if (!email || !password) throw new ApiError(400, 'Email and password required')
@@ -74,14 +74,14 @@ export const login = asyncHandler(async (req, res) => {
   res.json(new ApiResponse(200, { user, accessToken }, 'Logged in'))
 })
 
-// ── POST /api/auth/google ─────────────────────────────────────
-// @react-oauth/google useGoogleLogin returns an access_token (NOT an id_token)
-// We verify it by calling Google's userinfo endpoint — no extra SDK needed
+
+
+
 export const googleAuth = asyncHandler(async (req, res) => {
-  const { idToken } = req.body  // access_token sent from frontend
+  const { idToken } = req.body  
   if (!idToken) throw new ApiError(400, 'Google token required')
 
-  // Validate token + fetch profile from Google
+  
   let profile
   try {
     const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
@@ -96,7 +96,7 @@ export const googleAuth = asyncHandler(async (req, res) => {
   const { sub: googleId, email, name, picture } = profile
   if (!email) throw new ApiError(401, 'Google account has no email address')
 
-  // Find by googleId OR email to auto-link existing accounts
+  
   let user = await User.findOne({ $or: [{ googleId }, { email }] }).select('+refreshToken')
 
   if (user) {
@@ -126,7 +126,7 @@ export const googleAuth = asyncHandler(async (req, res) => {
   res.status(200).json(new ApiResponse(200, { user, accessToken }, 'Authenticated with Google'))
 })
 
-// ── POST /api/auth/refresh ────────────────────────────────────
+
 export const refresh = asyncHandler(async (req, res) => {
   const token = req.cookies.refreshToken
   if (!token) throw new ApiError(401, 'No refresh token')
@@ -150,7 +150,7 @@ export const refresh = asyncHandler(async (req, res) => {
   res.json(new ApiResponse(200, { accessToken }, 'Token refreshed'))
 })
 
-// ── POST /api/auth/logout ─────────────────────────────────────
+
 export const logout = asyncHandler(async (req, res) => {
   if (req.user) {
     await User.findByIdAndUpdate(req.user._id, { $unset: { refreshToken: 1 } })

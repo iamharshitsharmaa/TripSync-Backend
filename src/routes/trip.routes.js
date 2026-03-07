@@ -4,7 +4,7 @@ import { requireTripAccess } from '../middleware/requireTripAccess.js'
 import { getTrips, createTrip, getTrip, updateTrip, deleteTrip } from '../controllers/trip.controller.js'
 
 const router = Router()
-router.use(verifyJWT) // all trip routes need auth
+router.use(verifyJWT) 
 
 router.get('/', getTrips)
 router.post('/', createTrip)

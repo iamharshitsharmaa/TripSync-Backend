@@ -8,7 +8,7 @@ import asyncHandler from '../utils/asyncHandler.js'
 const router = Router()
 router.use(verifyJWT)
 
-// GET /api/comments?entityType=activity&entityId=xxx
+
 router.get('/comments', asyncHandler(async (req, res) => {
   const { entityType, entityId } = req.query
   if (!entityType || !entityId) throw new ApiError(400, 'entityType and entityId are required')
@@ -20,7 +20,7 @@ router.get('/comments', asyncHandler(async (req, res) => {
   res.json(new ApiResponse(200, comments))
 }))
 
-// POST /api/comments
+
 router.post('/comments', asyncHandler(async (req, res) => {
   const { tripId, entityType, entityId, content, parentId } = req.body
 
@@ -39,7 +39,7 @@ router.post('/comments', asyncHandler(async (req, res) => {
 
   await comment.populate('author', 'name avatar')
 
-  // Emit socket event so other members see the comment live
+  
   req.app.get('io')
     ?.to(`trip:${tripId}`)
     .emit('comment:added', { entityType, entityId, comment })
@@ -47,7 +47,7 @@ router.post('/comments', asyncHandler(async (req, res) => {
   res.status(201).json(new ApiResponse(201, comment, 'Comment posted'))
 }))
 
-// DELETE /api/comments/:id  (only the author can delete)
+
 router.delete('/comments/:id', asyncHandler(async (req, res) => {
   const comment = await Comment.findOne({
     _id:    req.params.id,

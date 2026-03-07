@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken'
 import { User } from '../models/User.js'
 import ApiError from '../utils/ApiError.js'
 import asyncHandler from '../utils/asyncHandler.js'
+import 'dotenv/config'
 
 const verifyJWT = asyncHandler(async (req, res, next) => {
   const token = req.headers.authorization?.replace('Bearer ', '')
@@ -12,8 +13,8 @@ const verifyJWT = asyncHandler(async (req, res, next) => {
   try {
     decoded = jwt.verify(token, process.env.JWT_SECRET)
   } catch (err) {
-    // Return 401 for BOTH expired and invalid tokens
-    // This is critical — 401 triggers the axios refresh interceptor on the frontend
+    
+    
     if (err.name === 'TokenExpiredError') {
       throw new ApiError(401, 'Token expired')
     }

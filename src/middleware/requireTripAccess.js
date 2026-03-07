@@ -4,7 +4,7 @@ import asyncHandler from '../utils/asyncHandler.js'
 
 const ROLE_LEVEL = { viewer: 1, editor: 2, owner: 3 }
 
-// requireTripAccess('editor') — factory function
+
 export const requireTripAccess = (minRole = 'viewer') =>
   asyncHandler(async (req, res, next) => {
     const trip = await Trip.findById(req.params.tripId || req.params.id)
@@ -19,7 +19,7 @@ export const requireTripAccess = (minRole = 'viewer') =>
       throw new ApiError(403, `Requires ${minRole} access`)
     }
 
-    req.trip = trip        // available in controller
+    req.trip = trip        
     req.memberRole = member.role
     next()
   })

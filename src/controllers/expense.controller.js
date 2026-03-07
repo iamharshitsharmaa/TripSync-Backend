@@ -10,7 +10,7 @@ export const getExpenses = asyncHandler(async (req, res) => {
     .populate('paidBy', 'name avatar')
     .sort({ date: -1 })
 
-  // 🔥 Aggregation summary by category
+  
   const summary = await Expense.aggregate([
     { $match: { trip: new Expense().constructor.Types.ObjectId(tripId) } },
     {
