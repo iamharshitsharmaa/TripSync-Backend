@@ -13,10 +13,11 @@ import expenseRoutes     from './routes/expense.routes.js'
 import uploadRoutes      from './routes/upload.routes.js'
 import aiRoutes          from './routes/ai.routes.js'
 import chatRoutes        from './routes/chat.routes.js'
+import healthRouter from "./routes/HealthCheck.routes.js";
 
 const app = express()
 
-
+app.use("/api/health", healthRouter);
 
 app.use((req, res, next) => {
   res.setHeader('Cross-Origin-Opener-Policy',   'unsafe-none')
