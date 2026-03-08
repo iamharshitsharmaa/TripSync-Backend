@@ -29,7 +29,7 @@ app.use((req, res, next) => {
 
 app.use(
   cors({
-    origin: process.env.CLIENT_URL,
+    origin: process.env.CLIENT_URL || "https://trip-sync-sigma.vercel.app",
     credentials: true,
   }),
 );
